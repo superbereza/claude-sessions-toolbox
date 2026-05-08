@@ -68,6 +68,15 @@ Parse with `grep ^URL:` etc. Exit code is `1` if the URL didn't appear within 30
 - You want to spin up a brand-new project folder and get a session in it.
 - You're driving Claude from a phone/browser and want to launch sessions remotely.
 
+## Reporting the URL back to the user
+
+After running `claude-remote spawn ...`, parse the `URL: <...>` line and present it to the user as a **Markdown hyperlink** so it's clickable in their terminal/UI, not as raw text. Example response shape:
+
+> Session ready: [Open in browser](https://claude.ai/code?environment=env_xxx)
+> tmux: `cc—myproject—debug-auth`
+
+Always include the tmux session name as well, so the user can `kill` it later.
+
 ## Notes
 
 - Requires `claude` v2.1.51+ and a logged-in claude.ai subscription (Pro/Max/Team/Enterprise).
