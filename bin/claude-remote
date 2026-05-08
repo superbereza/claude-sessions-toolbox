@@ -1,9 +1,12 @@
 #!/usr/bin/env bash
-# claude-remote — spawn a detached Claude Code remote-control session in tmux
+# claude-remote — spawn / list / kill Claude Code remote-control sessions.
 #
-# Creates or uses <path>, pre-trusts it for Claude Code (no interactive trust
-# dialog), starts a tmux session running 'claude remote-control', and prints
-# the session URL captured from the pane.
+# Subcommands:
+#   claude-remote <path> [task]            (implicit spawn)
+#   claude-remote spawn <path> [task]      (explicit)
+#   claude-remote ls
+#   claude-remote kill <name>
+#   claude-remote kill --all
 
 set -euo pipefail
 
@@ -13,58 +16,59 @@ POLL_INTERVAL_S=0.5
 
 usage() {
     cat <<EOF
-Usage: claude-remote <path> [task-name]
+Usage:
+  claude-remote <path> [task]            Spawn a session (default action)
+  claude-remote spawn <path> [task]      Same as above, explicit
+  claude-remote ls                       List running cc— tmux sessions
+  claude-remote kill <name>              Kill one tmux session
+  claude-remote kill --all               Kill all cc— tmux sessions
 
-Args:
-  <path>       Folder to run Claude in. Created if missing.
-  [task-name]  Optional name for tmux/claude session.
-               Falls back to MM-DD_HH-MM timestamp.
-
-Examples:
-  claude-remote ~/dev/myproject
-  claude-remote ~/dev/newproject debug-auth
-
-Output:
-  SESSION: <tmux session name>
-  URL:     <https://claude.ai/code/...>
+Spawn output:
+  SESSION: <tmux name>
+  URL:     https://claude.ai/code/...
   ATTACH:  tmux attach -t <session>
+
+Exit 1 if URL doesn't appear within ${URL_TIMEOUT_S}s.
 EOF
 }
 
 die() { echo "claude-remote: $*" >&2; exit 1; }
 
-# --- pre-flight ---
-[[ $# -lt 1 || ${1:-} == -h || ${1:-} == --help ]] && { usage; exit 0; }
-command -v tmux    >/dev/null || die "tmux not found"
-command -v claude  >/dev/null || die "claude not found in PATH"
-command -v python3 >/dev/null || die "python3 not found"
-[[ -f "$HOME/.claude.json" ]] || die "~/.claude.json not found — run 'claude' once to initialize"
+# ---------------------------------------------------------------------------
+# spawn
+# ---------------------------------------------------------------------------
+cmd_spawn() {
+    [[ $# -lt 1 ]] && { usage; exit 2; }
 
-raw_path="$1"
-task="${2:-}"
+    command -v tmux    >/dev/null || die "tmux not found"
+    command -v claude  >/dev/null || die "claude not found in PATH"
+    command -v python3 >/dev/null || die "python3 not found"
+    [[ -f "$HOME/.claude.json" ]] || die "~/.claude.json not found — run 'claude' once to initialize"
 
-# resolve absolute path with ~ expansion
-abs_path=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$raw_path")
+    local raw_path="$1"
+    local task="${2:-}"
 
-is_new=0
-[[ -d "$abs_path" ]] || is_new=1
+    local abs_path
+    abs_path=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$raw_path")
 
-(( is_new )) && mkdir -p "$abs_path"
+    local is_new=0
+    [[ -d "$abs_path" ]] || is_new=1
+    (( is_new )) && mkdir -p "$abs_path"
 
-base=$(basename "$abs_path")
-suffix="${task:-$(date +%m-%d_%H-%M)}"
-session_name="cc${EM}${base}${EM}${suffix}"
+    local base suffix session_name tmux_name
+    base=$(basename "$abs_path")
+    suffix="${task:-$(date +%m-%d_%H-%M)}"
+    session_name="cc${EM}${base}${EM}${suffix}"
 
-# Resolve tmux name collision
-tmux_name="$session_name"
-i=2
-while tmux has-session -t "$tmux_name" 2>/dev/null; do
-    tmux_name="${session_name}-${i}"
-    ((i++))
-done
+    tmux_name="$session_name"
+    local i=2
+    while tmux has-session -t "$tmux_name" 2>/dev/null; do
+        tmux_name="${session_name}-${i}"
+        ((i++))
+    done
 
-# --- pre-trust the path in ~/.claude.json (atomic) ---
-python3 - "$abs_path" <<'PYEOF'
+    # Pre-trust path in ~/.claude.json (atomic)
+    python3 - "$abs_path" <<'PYEOF'
 import json, os, sys, tempfile
 path = sys.argv[1]
 cfg_path = os.path.expanduser('~/.claude.json')
@@ -92,30 +96,89 @@ with os.fdopen(fd, 'w') as f:
 os.replace(tmp, cfg_path)
 PYEOF
 
-# --- start tmux session, wide pane so URL fits on one line ---
-tmux new-session -d -s "$tmux_name" -x 220 -y 50 -c "$abs_path"
+    tmux new-session -d -s "$tmux_name" -x 220 -y 50 -c "$abs_path"
 
-claude_name="${base}${EM}${suffix}"
-launch_cmd="claude remote-control --name '${claude_name}' --permission-mode bypassPermissions"
-tmux send-keys -t "$tmux_name" "$launch_cmd" Enter
+    local claude_name="${base}${EM}${suffix}"
+    local launch_cmd="claude remote-control --name '${claude_name}' --permission-mode bypassPermissions"
+    tmux send-keys -t "$tmux_name" "$launch_cmd" Enter
 
-# --- poll capture-pane for the session URL ---
-url=""
-iters=$(awk -v t="$URL_TIMEOUT_S" -v s="$POLL_INTERVAL_S" 'BEGIN{print int(t/s)}')
-for _ in $(seq 1 "$iters"); do
-    pane=$(tmux capture-pane -p -t "$tmux_name" -S -200 2>/dev/null || true)
-    url=$(printf '%s' "$pane" | grep -oE 'https://claude\.ai/code/[A-Za-z0-9._~:/?#@!$&+=%-]+' | head -1 || true)
-    [[ -n "$url" ]] && break
-    sleep "$POLL_INTERVAL_S"
-done
+    local url=""
+    local iters
+    iters=$(awk -v t="$URL_TIMEOUT_S" -v s="$POLL_INTERVAL_S" 'BEGIN{print int(t/s)}')
+    for _ in $(seq 1 "$iters"); do
+        local pane
+        pane=$(tmux capture-pane -p -t "$tmux_name" -S -200 2>/dev/null || true)
+        url=$(printf '%s' "$pane" | grep -oE 'https://claude\.ai/code/[A-Za-z0-9._~:/?#@!$&+=%-]+' | head -1 || true)
+        [[ -n "$url" ]] && break
+        sleep "$POLL_INTERVAL_S"
+    done
 
-# --- output ---
-printf 'SESSION: %s\n' "$tmux_name"
-if [[ -n "$url" ]]; then
-    printf 'URL:     %s\n' "$url"
-else
-    printf 'URL:     <timeout after %ss — check pane manually>\n' "$URL_TIMEOUT_S"
-fi
-printf "ATTACH:  tmux attach -t '%s'\n" "$tmux_name"
+    printf 'SESSION: %s\n' "$tmux_name"
+    if [[ -n "$url" ]]; then
+        printf 'URL:     %s\n' "$url"
+    else
+        printf 'URL:     <timeout after %ss — check pane manually>\n' "$URL_TIMEOUT_S"
+    fi
+    printf "ATTACH:  tmux attach -t '%s'\n" "$tmux_name"
 
-[[ -z "$url" ]] && exit 1 || exit 0
+    [[ -n "$url" ]] || exit 1
+}
+
+# ---------------------------------------------------------------------------
+# ls
+# ---------------------------------------------------------------------------
+cmd_list() {
+    local rows
+    rows=$(tmux list-sessions -F '#{session_name}|#{session_path}' 2>/dev/null | grep '^cc—' || true)
+    if [[ -z "$rows" ]]; then
+        echo "(no cc— sessions running)"
+        return
+    fi
+    printf '%-50s  %s\n' "SESSION" "PATH"
+    printf '%s\n' "$rows" | awk -F'|' '{ printf "%-50s  %s\n", $1, $2 }'
+}
+
+# ---------------------------------------------------------------------------
+# kill <name> | kill --all
+# ---------------------------------------------------------------------------
+cmd_kill() {
+    case "${1:-}" in
+        "")
+            echo "claude-remote kill: missing <name> or --all" >&2
+            exit 2
+            ;;
+        --all)
+            local names
+            names=$(tmux list-sessions -F '#{session_name}' 2>/dev/null | grep '^cc—' || true)
+            if [[ -z "$names" ]]; then
+                echo "(no cc— sessions to kill)"
+                return
+            fi
+            while IFS= read -r n; do
+                tmux kill-session -t "$n" && echo "killed: $n"
+            done <<< "$names"
+            ;;
+        *)
+            local name="$1"
+            if tmux has-session -t "$name" 2>/dev/null; then
+                tmux kill-session -t "$name"
+                echo "killed: $name"
+            else
+                echo "no such session: $name" >&2
+                exit 1
+            fi
+            ;;
+    esac
+}
+
+# ---------------------------------------------------------------------------
+# dispatch
+# ---------------------------------------------------------------------------
+case "${1:-}" in
+    -h|--help) usage ;;
+    "")        usage; exit 2 ;;
+    ls)        cmd_list ;;
+    kill)      shift; cmd_kill "$@" ;;
+    spawn)     shift; cmd_spawn "$@" ;;
+    *)         cmd_spawn "$@" ;;
+esac

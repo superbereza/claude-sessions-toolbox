@@ -12,9 +12,8 @@ cd ~/dev/claude-remote-launcher
 ./install.sh
 ```
 
-`install.sh` creates three symlinks:
+`install.sh` creates two symlinks:
 - `~/.local/bin/claude-remote` → `bin/claude-remote`
-- `~/.local/bin/claude-remote-kill` → `bin/claude-remote-kill`
 - `~/.claude/skills/claude-remote/SKILL.md` → `SKILL.md`
 
 `~/.local/bin` must already be in `PATH`. The skill becomes available in any new Claude Code session.
@@ -39,15 +38,23 @@ URL:     https://claude.ai/code/...
 ATTACH:  tmux attach -t 'cc—myproject—debug-auth'
 ```
 
-## Cleanup
+## Subcommands
+
+| Command | Action |
+|---------|--------|
+| `claude-remote <path> [task]` | Spawn (default; same as `spawn`) |
+| `claude-remote spawn <path> [task]` | Spawn, explicit |
+| `claude-remote ls` | List running `cc—` tmux sessions |
+| `claude-remote kill <name>` | Kill one |
+| `claude-remote kill --all` | Kill all `cc—` sessions |
 
 ```bash
-claude-remote-kill                              # list running cc— sessions
-claude-remote-kill 'cc—myproject—debug-auth'   # kill one
-claude-remote-kill --all                        # kill all cc— sessions
+claude-remote ls
+claude-remote kill 'cc—myproject—debug-auth'
+claude-remote kill --all
 ```
 
-`tmux kill-session` is also fine — `claude-remote-kill` is a thin convenience that filters to `cc—*`.
+`tmux kill-session` is also fine — the `kill` subcommand is just a thin filter to `cc—*`.
 
 Disconnecting from claude.ai/code only drops the remote view; the local `claude` process keeps running until you kill the tmux session.
 

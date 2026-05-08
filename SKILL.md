@@ -7,26 +7,32 @@ description: Spawn a Claude Code remote-control session in a detached tmux pane 
 
 Use `claude-remote` to spin up a fresh Claude Code session in any folder and get back a `claude.ai/code` URL you can open in a browser or share.
 
+## Subcommands
+
+| Command | Action |
+|---------|--------|
+| `claude-remote <path> [task]` | Spawn a session (default action; equivalent to `spawn`) |
+| `claude-remote spawn <path> [task]` | Same as above, explicit |
+| `claude-remote ls` | List running `cc—` tmux sessions with their cwd |
+| `claude-remote kill <name>` | Kill one tmux session |
+| `claude-remote kill --all` | Kill all `cc—` tmux sessions |
+
 ## Quick Examples
 
 ```bash
-# Launch in an existing project, timestamp-suffixed name
+# Launch in an existing project (timestamp suffix)
 claude-remote ~/dev/myproject
 
 # Launch in a NEW folder (created and pre-trusted automatically)
 claude-remote ~/dev/scratch-experiment
 
-# Custom task name in the session title
+# Custom task name
 claude-remote ~/dev/myproject debug-auth
 
-# List running cc— sessions
-claude-remote-kill
-
-# Kill one
-claude-remote-kill 'cc—myproject—debug-auth'
-
-# Kill all cc— sessions
-claude-remote-kill --all
+# List, kill one, kill all
+claude-remote ls
+claude-remote kill 'cc—myproject—debug-auth'
+claude-remote kill --all
 ```
 
 ## Arguments
@@ -66,6 +72,6 @@ Parse with `grep ^URL:` etc. Exit code is `1` if the URL didn't appear within 30
 
 - Requires `claude` v2.1.51+ and a logged-in claude.ai subscription (Pro/Max/Team/Enterprise).
 - The tmux session persists after the script exits — attach with `tmux attach -t <session>`.
-- Em-dash (`—`) separates segments in the session name. Quote it when passing to `tmux` or `claude-remote-kill`.
+- Em-dash (`—`) separates segments in the session name. Quote it when passing to `tmux` or `claude-remote kill`.
 - The script writes `hasTrustDialogAccepted: true` to `~/.claude.json` for the path; trust is left in place after sessions are killed.
-- Disconnecting from claude.ai/code only drops the remote view — the local `claude` process keeps running until you `claude-remote-kill` (or `tmux kill-session`).
+- Disconnecting from claude.ai/code only drops the remote view — the local `claude` process keeps running until you `claude-remote kill` (or `tmux kill-session`).
