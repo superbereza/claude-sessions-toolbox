@@ -5,7 +5,7 @@ set -euo pipefail
 bin_dir="$HOME/.local/bin"
 skill_dir="$HOME/.claude/skills/claude-remote"
 
-for f in "$bin_dir/claude-remote" "$skill_dir/SKILL.md" "$bin_dir/claude-remote-kill"; do
+for f in "$bin_dir/claude-remote" "$skill_dir/SKILL.md"; do
     [[ -L "$f" ]] && rm -v "$f" || true
 done
 [[ -d "$skill_dir" && -z "$(ls -A "$skill_dir" 2>/dev/null)" ]] && rmdir -v "$skill_dir" || true
