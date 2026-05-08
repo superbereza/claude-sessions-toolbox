@@ -18,6 +18,15 @@ claude-remote ~/dev/scratch-experiment
 
 # Custom task name in the session title
 claude-remote ~/dev/myproject debug-auth
+
+# List running cc— sessions
+claude-remote-kill
+
+# Kill one
+claude-remote-kill 'cc—myproject—debug-auth'
+
+# Kill all cc— sessions
+claude-remote-kill --all
 ```
 
 ## Arguments
@@ -57,5 +66,6 @@ Parse with `grep ^URL:` etc. Exit code is `1` if the URL didn't appear within 30
 
 - Requires `claude` v2.1.51+ and a logged-in claude.ai subscription (Pro/Max/Team/Enterprise).
 - The tmux session persists after the script exits — attach with `tmux attach -t <session>`.
-- Em-dash (`—`) separates segments in the session name. Quote it when passing to `tmux`.
-- Only writes to `~/.claude.json` for new folders; existing trusted paths are left alone.
+- Em-dash (`—`) separates segments in the session name. Quote it when passing to `tmux` or `claude-remote-kill`.
+- The script writes `hasTrustDialogAccepted: true` to `~/.claude.json` for the path; trust is left in place after sessions are killed.
+- Disconnecting from claude.ai/code only drops the remote view — the local `claude` process keeps running until you `claude-remote-kill` (or `tmux kill-session`).

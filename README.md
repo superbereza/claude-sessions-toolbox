@@ -12,8 +12,9 @@ cd ~/dev/claude-remote-launcher
 ./install.sh
 ```
 
-`install.sh` creates two symlinks:
+`install.sh` creates three symlinks:
 - `~/.local/bin/claude-remote` → `bin/claude-remote`
+- `~/.local/bin/claude-remote-kill` → `bin/claude-remote-kill`
 - `~/.claude/skills/claude-remote/SKILL.md` → `SKILL.md`
 
 `~/.local/bin` must already be in `PATH`. The skill becomes available in any new Claude Code session.
@@ -37,6 +38,20 @@ SESSION: cc—myproject—debug-auth
 URL:     https://claude.ai/code/...
 ATTACH:  tmux attach -t 'cc—myproject—debug-auth'
 ```
+
+## Cleanup
+
+```bash
+claude-remote-kill                              # list running cc— sessions
+claude-remote-kill 'cc—myproject—debug-auth'   # kill one
+claude-remote-kill --all                        # kill all cc— sessions
+```
+
+`tmux kill-session` is also fine — `claude-remote-kill` is a thin convenience that filters to `cc—*`.
+
+Disconnecting from claude.ai/code only drops the remote view; the local `claude` process keeps running until you kill the tmux session.
+
+The trust entry written to `~/.claude.json` is left in place after killing sessions, so re-launching in the same folder is fast.
 
 ## How it works
 
@@ -69,4 +84,4 @@ Em-dash (`—`, U+2014) is the separator. Hyphens (`-`) are reserved for compoun
 ./uninstall.sh
 ```
 
-Removes the two symlinks. Repo and `~/.claude.json` are not touched.
+Removes the symlinks. Repo and `~/.claude.json` are not touched.
