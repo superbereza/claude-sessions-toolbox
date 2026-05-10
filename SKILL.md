@@ -16,6 +16,7 @@ Use `claude-remote` to spin up a fresh Claude Code session in any folder and get
 | `claude-remote ls` | List running `cc—` tmux sessions with their cwd |
 | `claude-remote kill <name>` | Kill one tmux session |
 | `claude-remote kill --all` | Kill all `cc—` tmux sessions |
+| `claude-remote refresh <name>` | Re-issue `/remote-control` to get a fresh URL after token rotation kills the old one |
 
 ## Quick Examples
 
@@ -56,11 +57,20 @@ Parse with `grep ^URL:` etc. Exit code is `1` if the URL didn't appear within 30
 
 1. Resolves the absolute path; flags whether it's a new folder.
 2. Creates the folder if missing.
-3. **Pre-trusts the path** by writing `hasTrustDialogAccepted: true` into `~/.claude.json` atomically — no interactive trust dialog needed.
-4. Starts a detached tmux session in the path (220×50 pane).
-5. Runs `claude remote-control --name '<base>—<suffix>' --permission-mode bypassPermissions` inside.
-6. Polls `tmux capture-pane` for the `https://claude.ai/code/...` URL (up to 30s).
-7. Prints the three-line output. Tmux session keeps running.
+3. **Pre-trusts the path** by writing `hasTrustDialogAccepted: true` into `~/.claude.json` atomically.
+4. Starts a detached tmux session in the path.
+5. Runs `claude --dangerously-skip-permissions` inside (interactive TUI).
+6. **Trust-dialog fallback**: if the prompt still appears (e.g. pre-trust didn't take), sends `1`.
+7. Waits for `bypass permissions on` to show in the bottom bar (TUI ready).
+8. Sends `/remote-control '<base>—<suffix>'` slash command to enable Remote Control.
+9. Polls `tmux capture-pane` for the `https://claude.ai/code/...` URL (up to 30s).
+10. Prints the three-line output. Tmux session keeps running.
+
+## Why slash, not `claude remote-control` server mode
+
+- Conversation lives as a normal Claude session (`<uuid>.jsonl`). Always `--resume`-able.
+- If Remote Control connection dies (token rotates after ~1 day, network drops), `claude-remote refresh <name>` re-issues `/remote-control` inside the existing tmux pane — fresh URL, same chat history.
+- Server mode bundles sessions inside a single process: when the server dies, all its sessions die with it.
 
 ## When to Use
 
