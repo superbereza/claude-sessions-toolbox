@@ -104,30 +104,18 @@ PYEOF
     # Start interactive Claude with bypass; we'll enable Remote Control via slash.
     tmux send-keys -t "$tmux_name" "claude --dangerously-skip-permissions" Enter
 
-    # Wait for the TUI to reach ready state. Handle the trust-prompt fallback
-    # in case ~/.claude.json pre-trust didn't take effect.
-    local trust_handled=0
+    # Wait for the TUI to reach ready state (bottom bar shows "bypass permissions on").
+    # Trust dialog is skipped because we pre-wrote hasTrustDialogAccepted above.
     local ready=0
     local ready_iters
     ready_iters=$(awk 'BEGIN{print int(40/0.5)}')
     for _ in $(seq 1 "$ready_iters"); do
         local pane
         pane=$(tmux capture-pane -p -J -t "$tmux_name" -S -200 2>/dev/null || true)
-
-        # Trust dialog still showing? Pick option 1.
-        if (( !trust_handled )) && printf '%s' "$pane" | grep -qiE 'trust the files|yes, proceed'; then
-            tmux send-keys -t "$tmux_name" '1' Enter
-            trust_handled=1
-            sleep 1
-            continue
-        fi
-
-        # TUI bottom bar shows "bypass permissions on" once ready.
         if printf '%s' "$pane" | grep -q 'bypass permissions on'; then
             ready=1
             break
         fi
-
         sleep 0.5
     done
 

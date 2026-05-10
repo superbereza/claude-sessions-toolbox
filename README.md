@@ -68,11 +68,10 @@ The trust entry written to `~/.claude.json` is left in place after killing sessi
 3. **Pre-trusts the folder** by atomically writing `hasTrustDialogAccepted: true` into `~/.claude.json` under the project entry.
 4. Starts a detached tmux session in the folder.
 5. Runs `claude --dangerously-skip-permissions` inside the pane (interactive TUI).
-6. **Trust-dialog fallback**: polls the pane for `trust the files` / `Yes, proceed`; if seen, sends `1`.
-7. Waits for `bypass permissions on` (bottom-bar indicator) — the TUI is ready.
-8. Sends `/remote-control '<base>—<suffix>'` slash command to enable Remote Control.
-9. Polls `tmux capture-pane` (with `-J` to join wrapped lines) every 500 ms for `https://claude.ai/code/...` (timeout 30 s).
-10. Prints the three-line plaintext output. Tmux session keeps running after the script exits.
+6. Waits for `bypass permissions on` (bottom-bar indicator) — the TUI is ready. Trust dialog is skipped thanks to step 3.
+7. Sends `/remote-control '<base>—<suffix>'` slash command to enable Remote Control.
+8. Polls `tmux capture-pane` (with `-J` to join wrapped lines) every 500 ms for `https://claude.ai/code/...` (timeout 30 s).
+9. Prints the three-line plaintext output. Tmux session keeps running after the script exits.
 
 ## Why slash command, not server mode
 

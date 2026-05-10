@@ -60,11 +60,10 @@ Parse with `grep ^URL:` etc. Exit code is `1` if the URL didn't appear within 30
 3. **Pre-trusts the path** by writing `hasTrustDialogAccepted: true` into `~/.claude.json` atomically.
 4. Starts a detached tmux session in the path.
 5. Runs `claude --dangerously-skip-permissions` inside (interactive TUI).
-6. **Trust-dialog fallback**: if the prompt still appears (e.g. pre-trust didn't take), sends `1`.
-7. Waits for `bypass permissions on` to show in the bottom bar (TUI ready).
-8. Sends `/remote-control '<base>—<suffix>'` slash command to enable Remote Control.
-9. Polls `tmux capture-pane` for the `https://claude.ai/code/...` URL (up to 30s).
-10. Prints the three-line output. Tmux session keeps running.
+6. Waits for `bypass permissions on` to show in the bottom bar (TUI ready). Trust dialog is skipped thanks to step 3.
+7. Sends `/remote-control '<base>—<suffix>'` slash command to enable Remote Control.
+8. Polls `tmux capture-pane` for the `https://claude.ai/code/...` URL (up to 30s).
+9. Prints the three-line output. Tmux session keeps running.
 
 ## Why slash, not `claude remote-control` server mode
 
