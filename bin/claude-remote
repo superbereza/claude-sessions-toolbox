@@ -125,7 +125,9 @@ PYEOF
     fi
 
     # Enable Remote Control via slash (carries chat history; cleanly recoverable).
-    tmux send-keys -t "$tmux_name" "/remote-control '${claude_name}'" Enter
+    # No quotes around the name — slash command takes the rest of the line as the title verbatim,
+    # so quotes would end up in the displayed name.
+    tmux send-keys -t "$tmux_name" "/remote-control ${claude_name}" Enter
 
     local url=""
     local iters
