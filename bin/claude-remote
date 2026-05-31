@@ -2,10 +2,10 @@
 # claude-remote — spawn / list / kill Claude Code remote-control sessions.
 #
 # Subcommands:
-#   claude-remote <path> [task]            (implicit spawn)
-#   claude-remote spawn <path> [task]      (explicit)
+#   claude-remote <path> [name] [--url]    (implicit spawn)
+#   claude-remote spawn <path> [name] [--url]   (explicit)
 #   claude-remote ls
-#   claude-remote kill <name>
+#   claude-remote kill <session>
 #   claude-remote kill --all
 
 set -euo pipefail
@@ -17,19 +17,30 @@ POLL_INTERVAL_S=0.5
 usage() {
     cat <<EOF
 Usage:
-  claude-remote <path> [task]            Spawn a session (default action)
-  claude-remote spawn <path> [task]      Same as above, explicit
-  claude-remote ls                       List running cc— tmux sessions
-  claude-remote kill <name>              Kill one tmux session
-  claude-remote kill --all               Kill all cc— tmux sessions
-  claude-remote refresh <name>           Re-issue /remote-control to get a fresh URL
+  claude-remote <path> [name] [--url]         Spawn a session (default action)
+  claude-remote spawn <path> [name] [--url]   Same as above, explicit
+  claude-remote ls                            List running cc— tmux sessions
+  claude-remote kill <session>                Kill one tmux session
+  claude-remote kill --all                    Kill all cc— tmux sessions
+  claude-remote refresh <session>             Re-issue /remote-control for a fresh URL
 
-Spawn output:
+Args:
+  <path>   Project folder (created if it doesn't exist).
+  [name]   Session name = remote-control chat title. Default: the folder name.
+           The device prefix (e.g. "mac-mini/") is added by remote-control itself.
+
+Flags:
+  --url, -u   Also print the claude.ai/code URL. Default: status only.
+
+Spawn output (default):
   SESSION: <tmux name>
-  URL:     https://claude.ai/code/...
+  STATUS:  remote-control active
   ATTACH:  tmux attach -t <session>
 
-Exit 1 if URL doesn't appear within ${URL_TIMEOUT_S}s.
+With --url the STATUS line becomes:
+  URL:     https://claude.ai/code/...
+
+Exit 1 if the remote-control URL doesn't appear within ${URL_TIMEOUT_S}s.
 EOF
 }
 
@@ -39,15 +50,27 @@ die() { echo "claude-remote: $*" >&2; exit 1; }
 # spawn
 # ---------------------------------------------------------------------------
 cmd_spawn() {
-    [[ $# -lt 1 ]] && { usage; exit 2; }
+    # Flags may appear anywhere among the args. Default: status only, no URL.
+    # Pass --url (-u) to also print the claude.ai/code URL.
+    local show_url=0
+    local -a pos=()
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            --url|-u) show_url=1 ;;
+            --)       shift; while [[ $# -gt 0 ]]; do pos+=("$1"); shift; done; break ;;
+            *)        pos+=("$1") ;;
+        esac
+        shift
+    done
+
+    local raw_path="${pos[0]:-}"
+    local name="${pos[1]:-}"
+    [[ -z "$raw_path" ]] && { usage; exit 2; }
 
     command -v tmux    >/dev/null || die "tmux not found"
     command -v claude  >/dev/null || die "claude not found in PATH"
     command -v python3 >/dev/null || die "python3 not found"
     [[ -f "$HOME/.claude.json" ]] || die "~/.claude.json not found — run 'claude' once to initialize"
-
-    local raw_path="$1"
-    local task="${2:-}"
 
     local abs_path
     abs_path=$(python3 -c 'import os,sys; print(os.path.abspath(os.path.expanduser(sys.argv[1])))' "$raw_path")
@@ -56,10 +79,13 @@ cmd_spawn() {
     [[ -d "$abs_path" ]] || is_new=1
     (( is_new )) && mkdir -p "$abs_path"
 
-    local base suffix session_name tmux_name
+    local base session_name tmux_name
     base=$(basename "$abs_path")
-    suffix="${task:-$(date +%m-%d_%H-%M)}"
-    session_name="cc${EM}${base}${EM}${suffix}"
+    # Session name = remote-control chat title. Defaults to the folder name
+    # (clean, no timestamp). The device prefix (e.g. "mac-mini/") is added by
+    # remote-control itself.
+    [[ -z "$name" ]] && name="$base"
+    session_name="cc${EM}${name}"
 
     tmux_name="$session_name"
     local i=2
@@ -99,7 +125,7 @@ PYEOF
 
     tmux new-session -d -s "$tmux_name" -c "$abs_path"
 
-    local claude_name="${base}${EM}${suffix}"
+    local claude_name="$name"
 
     # Start interactive Claude with bypass; we'll enable Remote Control via slash.
     tmux send-keys -t "$tmux_name" "claude --dangerously-skip-permissions" Enter
@@ -141,10 +167,18 @@ PYEOF
     done
 
     printf 'SESSION: %s\n' "$tmux_name"
-    if [[ -n "$url" ]]; then
-        printf 'URL:     %s\n' "$url"
+    if (( show_url )); then
+        if [[ -n "$url" ]]; then
+            printf 'URL:     %s\n' "$url"
+        else
+            printf 'URL:     <timeout after %ss — check pane manually>\n' "$URL_TIMEOUT_S"
+        fi
     else
-        printf 'URL:     <timeout after %ss — check pane manually>\n' "$URL_TIMEOUT_S"
+        if [[ -n "$url" ]]; then
+            printf 'STATUS:  remote-control active (pass --url to print the link)\n'
+        else
+            printf 'STATUS:  remote-control URL not detected within %ss — check pane\n' "$URL_TIMEOUT_S"
+        fi
     fi
     printf "ATTACH:  tmux attach -t '%s'\n" "$tmux_name"
 
