@@ -27,7 +27,8 @@ Usage:
 Args:
   <path>   Project folder (created if it doesn't exist).
   [name]   Session name = remote-control chat title. Default: the folder name.
-           The device prefix (e.g. "mac-mini/") is added by remote-control itself.
+           Pass it in full (e.g. "mac-mini/ai-auth-lib") for a "device/" prefix —
+           nothing is prepended automatically.
 
 Flags:
   --url, -u   Also print the claude.ai/code URL. Default: status only.
@@ -82,8 +83,8 @@ cmd_spawn() {
     local base session_name tmux_name
     base=$(basename "$abs_path")
     # Session name = remote-control chat title. Defaults to the folder name
-    # (clean, no timestamp). The device prefix (e.g. "mac-mini/") is added by
-    # remote-control itself.
+    # (clean, no timestamp). Nothing is prepended automatically — pass the name
+    # in full (e.g. "mac-mini/ai-auth-lib") if you want a "device/" prefix.
     [[ -z "$name" ]] && name="$base"
     session_name="cc${EM}${name}"
 

@@ -21,14 +21,17 @@ Use `claude-remote` to spin up a fresh Claude Code session in any folder. The re
 ## Quick Examples
 
 ```bash
-# Launch in an existing project — chat named after the folder (e.g. "mac-mini/myproject")
+# Launch in an existing project — chat title defaults to the folder name ("myproject")
 claude-remote ~/dev/myproject
 
 # Launch in a NEW folder (created and pre-trusted automatically)
 claude-remote ~/dev/scratch-experiment
 
-# Custom session name (becomes the remote-control chat title)
+# Custom session name (becomes the remote-control chat title, verbatim)
 claude-remote ~/dev/myproject debug-auth
+
+# Full custom title, including a "device/" prefix if you use that convention
+claude-remote ~/dev/ai-auth-lib "mac-mini/ai-auth-lib"
 
 # Also print the claude.ai/code URL
 claude-remote ~/dev/myproject --url
@@ -44,7 +47,7 @@ claude-remote kill --all
 | Arg | Description |
 |-----|-------------|
 | `<path>` | Folder to run Claude in. Created with `mkdir -p` if missing. |
-| `[name]` | Session name = remote-control **chat title**. Default: the folder name. The device prefix (e.g. `mac-mini/`) is added by remote-control itself, so pass just `myproject`, not `mac-mini/myproject`. |
+| `[name]` | Session name = remote-control **chat title**, used verbatim. Default: the folder name. Nothing is prepended automatically — if you use a `device/` prefix convention (e.g. `mac-mini/`), pass the full title yourself: `claude-remote ~/dev/ai-auth-lib "mac-mini/ai-auth-lib"`. |
 
 ## Flags
 
