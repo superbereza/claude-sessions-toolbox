@@ -11,8 +11,8 @@ chmod +x "$repo_dir/bin/claude-remote"
 
 mkdir -p "$bin_dir" "$skill_dir"
 
-ln -sfn "$repo_dir/bin/claude-remote"  "$bin_dir/claude-remote"
-ln -sfn "$repo_dir/SKILL.md"           "$skill_dir/SKILL.md"
+ln -sfn "$repo_dir/bin/claude-remote"              "$bin_dir/claude-remote"
+ln -sfn "$repo_dir/skills/claude-remote/SKILL.md"  "$skill_dir/SKILL.md"
 
 echo "Installed:"
 echo "  $bin_dir/claude-remote"

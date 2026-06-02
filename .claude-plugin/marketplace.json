@@ -1,0 +1,15 @@
+{
+  "name": "claude-remote-launcher",
+  "description": "Self-marketplace for the claude-remote plugin (launch remote-control sessions)",
+  "owner": {
+    "name": "superbereza"
+  },
+  "plugins": [
+    {
+      "name": "claude-remote",
+      "description": "Launch Claude Code Remote Control sessions in tmux and get the claude.ai/code URL — CLI + skill",
+      "version": "1.0.0",
+      "source": "./"
+    }
+  ]
+}

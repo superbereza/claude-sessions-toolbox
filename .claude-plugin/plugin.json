@@ -1,0 +1,17 @@
+{
+  "name": "claude-remote",
+  "description": "Launch Claude Code Remote Control sessions in a detached tmux pane and get the claude.ai/code URL — skill + CLI.",
+  "version": "1.0.0",
+  "author": {
+    "name": "superbereza"
+  },
+  "homepage": "https://github.com/superbereza/claude-remote-launcher",
+  "repository": "https://github.com/superbereza/claude-remote-launcher",
+  "keywords": [
+    "claude-code",
+    "remote-control",
+    "tmux",
+    "cli",
+    "skills"
+  ]
+}
