@@ -112,3 +112,7 @@ The slash-command approach this script uses keeps the conversation as a plain Cl
 ```
 
 Removes the symlinks. Repo and `~/.claude.json` are not touched.
+
+## OpenCode
+
+This skill also supports [OpenCode](https://opencode.ai) — see [`.opencode/INSTALL.md`](.opencode/INSTALL.md).
