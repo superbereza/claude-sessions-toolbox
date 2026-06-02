@@ -116,4 +116,27 @@ Always include the tmux session name so the user can `kill` it later.
 - The tmux session persists after the script exits — attach with `tmux attach -t <session>`.
 - Em-dash (`—`) separates `cc—` prefix from the name in the tmux session name. Quote it when passing to `tmux` or `claude-remote kill`.
 - The script writes `hasTrustDialogAccepted: true` to `~/.claude.json` for the path; trust is left in place after sessions are killed.
+- The script also writes `bypassPermissionsModeAccepted: true` to `~/.claude/settings.json` so the first-run bypass-permissions confirmation dialog doesn't block startup. Idempotent — leaves other settings untouched.
+- The first `/remote-control` call in a session also pops a one-time "Enable Remote Control" confirmation. The script auto-confirms it (default option) while polling for the URL.
 - Disconnecting from claude.ai/code only drops the remote view — the local `claude` process keeps running until you `claude-remote kill` (or `tmux kill-session`).
+
+## Spawning on a remote server (over SSH)
+
+The skill is just bash + tmux + claude — it runs wherever you invoke it.
+To spawn a session on a remote server:
+
+1. Install `claude-remote` there once (`git clone … && bash install.sh`).
+2. Make sure `claude` is installed and logged in on that server (`~/.claude/.credentials.json` must exist).
+3. From your local machine, invoke through SSH:
+
+```bash
+ssh <alias> "bash -lc 'claude-remote <path> [name] [--url]'"
+```
+
+`bash -lc` is important so that `~/.local/bin` (where `install.sh` puts the
+script) is on `PATH` for the non-interactive SSH shell. Alternative: call
+the script by its absolute path (e.g. `~/.local/bin/claude-remote`).
+
+The on-disk session belongs to the remote machine — `tmux attach -t …`
+also has to be done over SSH. The remote-control URL works from any
+device though, so you can drive the session from anywhere afterwards.

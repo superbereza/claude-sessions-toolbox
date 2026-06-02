@@ -109,6 +109,26 @@ cmd_spawn() {
         ((i++))
     done
 
+    # Pre-accept bypass-permissions mode so claude won't pause on the
+    # one-time confirmation dialog on its first --dangerously-skip-permissions run.
+    # Idempotent: only writes the flag, preserves any other settings.
+    python3 - <<'PYEOF'
+import json, os
+path = os.path.expanduser('~/.claude/settings.json')
+os.makedirs(os.path.dirname(path), exist_ok=True)
+data = {}
+if os.path.exists(path):
+    try:
+        with open(path) as f:
+            data = json.load(f)
+    except Exception:
+        data = {}
+if data.get('bypassPermissionsModeAccepted') is not True:
+    data['bypassPermissionsModeAccepted'] = True
+    with open(path, 'w') as f:
+        json.dump(data, f, indent=2)
+PYEOF
+
     # Pre-trust path in ~/.claude.json (atomic)
     python3 - "$abs_path" <<'PYEOF'
 import json, os, sys, tempfile
@@ -171,11 +191,20 @@ PYEOF
     tmux send-keys -t "$tmux_name" "/remote-control ${claude_name}" Enter
 
     local url=""
+    local confirmed_rc=0
     local iters
     iters=$(awk -v t="$URL_TIMEOUT_S" -v s="$POLL_INTERVAL_S" 'BEGIN{print int(t/s)}')
     for _ in $(seq 1 "$iters"); do
         local pane
         pane=$(tmux capture-pane -p -J -t "$tmux_name" -S -200 2>/dev/null || true)
+        # Auto-confirm the "Enable Remote Control" prompt (default option 1)
+        # that appears the first time /remote-control runs in a session.
+        if (( !confirmed_rc )) && printf '%s' "$pane" | grep -q 'Enable Remote Control'; then
+            tmux send-keys -t "$tmux_name" Enter
+            confirmed_rc=1
+            sleep 0.5
+            continue
+        fi
         url=$(printf '%s' "$pane" | grep -oE 'https://claude\.ai/code[/?][A-Za-z0-9._~:/?#@!$&+=%-]+' | tail -1 || true)
         [[ -n "$url" ]] && break
         sleep "$POLL_INTERVAL_S"
@@ -197,7 +226,12 @@ PYEOF
     fi
     printf "ATTACH:  tmux attach -t '%s'\n" "$tmux_name"
 
-    [[ -n "$url" ]] || exit 1
+    # On timeout, dump the last lines of the pane to stderr to aid debugging.
+    if [[ -z "$url" ]]; then
+        echo "claude-remote: --- last 30 lines of pane '$tmux_name' ---" >&2
+        tmux capture-pane -p -J -t "$tmux_name" -S -30 2>/dev/null >&2 || true
+        exit 1
+    fi
 }
 
 # ---------------------------------------------------------------------------
