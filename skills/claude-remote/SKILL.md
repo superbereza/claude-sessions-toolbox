@@ -13,8 +13,8 @@ Use `claude-remote` to spin up a fresh Claude Code session in any folder. The re
 
 | Command | Action |
 |---------|--------|
-| `claude-remote <path> [name] [--url]` | Spawn a session (default action; equivalent to `spawn`) |
-| `claude-remote spawn <path> [name] [--url]` | Same as above, explicit |
+| `claude-remote <path> [name] [--url] [--resume <uuid>]` | Spawn a session (default action; equivalent to `spawn`) |
+| `claude-remote spawn <path> [name] [--url] [--resume <uuid>]` | Same as above, explicit |
 | `claude-remote ls` | List running `cc—` tmux sessions with their cwd |
 | `claude-remote kill <session>` | Kill one tmux session |
 | `claude-remote kill --all` | Kill all `cc—` tmux sessions |
@@ -56,6 +56,7 @@ claude-remote kill --all
 | Flag | Effect |
 |------|--------|
 | `--url`, `-u` | Also print the `claude.ai/code` URL. **Default: status only** (no link). |
+| `--resume <uuid>`, `-r <uuid>` | Resume an existing session by UUID in the new tmux pane (instead of starting a fresh conversation). The session must exist in `~/.claude/projects/<cwd>/`. |
 
 ## Output
 

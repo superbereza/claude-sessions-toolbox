@@ -31,8 +31,10 @@ cmd_version() {
 usage() {
     cat <<EOF
 Usage:
-  claude-remote <path> [name] [--url]         Spawn a session (default action)
-  claude-remote spawn <path> [name] [--url]   Same as above, explicit
+  claude-remote <path> [name] [--url] [--resume <uuid>]
+                                              Spawn a session (default action)
+  claude-remote spawn <path> [name] [--url] [--resume <uuid>]
+                                              Same as above, explicit
   claude-remote ls                            List running cc— tmux sessions
   claude-remote kill <session>                Kill one tmux session
   claude-remote kill --all                    Kill all cc— tmux sessions
@@ -45,7 +47,9 @@ Args:
            nothing is prepended automatically.
 
 Flags:
-  --url, -u   Also print the claude.ai/code URL. Default: status only.
+  --url, -u           Also print the claude.ai/code URL. Default: status only.
+  --resume <uuid>     Resume an existing session by UUID in the new tmux pane
+  -r <uuid>           (instead of starting a fresh conversation).
 
 Spawn output (default):
   SESSION: <tmux name>
@@ -67,13 +71,21 @@ die() { echo "claude-remote: $*" >&2; exit 1; }
 cmd_spawn() {
     # Flags may appear anywhere among the args. Default: status only, no URL.
     # Pass --url (-u) to also print the claude.ai/code URL.
+    # Pass --resume <uuid> to resume an existing session by its UUID instead
+    # of starting a new conversation in the pane.
     local show_url=0
+    local resume_uuid=""
     local -a pos=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
-            --url|-u) show_url=1 ;;
-            --)       shift; while [[ $# -gt 0 ]]; do pos+=("$1"); shift; done; break ;;
-            *)        pos+=("$1") ;;
+            --url|-u)   show_url=1 ;;
+            --resume|-r)
+                [[ -n "${2:-}" ]] || die "--resume requires a session UUID"
+                resume_uuid="$2"
+                shift
+                ;;
+            --)         shift; while [[ $# -gt 0 ]]; do pos+=("$1"); shift; done; break ;;
+            *)          pos+=("$1") ;;
         esac
         shift
     done
@@ -162,8 +174,15 @@ PYEOF
 
     local claude_name="$name"
 
-    # Start interactive Claude with bypass; we'll enable Remote Control via slash.
-    tmux send-keys -t "$tmux_name" "claude --dangerously-skip-permissions" Enter
+    # Build the claude launch command. With --resume <uuid>, claude reopens that
+    # specific session in this pane instead of starting a fresh conversation.
+    local claude_cmd="claude --dangerously-skip-permissions"
+    if [[ -n "$resume_uuid" ]]; then
+        claude_cmd+=" --resume $resume_uuid"
+    fi
+
+    # Start interactive Claude; we'll enable Remote Control via slash.
+    tmux send-keys -t "$tmux_name" "$claude_cmd" Enter
 
     # Wait for the TUI to reach ready state (bottom bar shows "bypass permissions on").
     # Trust dialog is skipped because we pre-wrote hasTrustDialogAccepted above.
