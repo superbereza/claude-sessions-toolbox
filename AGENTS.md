@@ -33,3 +33,9 @@ claude-remote refresh <session>      # re-issue /remote-control for a fresh URL
 The session `name` is the remote-control chat title (passed verbatim — include a
 `device/` prefix yourself if you use that convention). Default behaviour prints a
 status, not the URL — read the skill for details.
+## Maintainer note
+
+Changing a skill or its payload? It reaches installed plugins **only after a release** —
+`scripts/bump.sh <v>` → commit → tag `vX.Y.Z` → GitHub release → `/plugin update`. A commit on
+`main` alone propagates nothing (Claude/Codex cache plugins by version string). Full rule and the
+MAJOR/MINOR/PATCH guidance: the `skill-builder` skill, §7.
