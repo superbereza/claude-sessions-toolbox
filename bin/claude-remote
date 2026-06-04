@@ -11,7 +11,7 @@
 set -euo pipefail
 
 EM=$'—'  # em-dash separator: cc—foo—task
-URL_TIMEOUT_S=30
+URL_TIMEOUT_S=45
 POLL_INTERVAL_S=0.5
 
 # Resolve this script's repo root (portable, follows symlinks) to find VERSION.
@@ -59,7 +59,8 @@ Spawn output (default):
 With --url the STATUS line becomes:
   URL:     https://claude.ai/code/...
 
-Exit 1 if the remote-control URL doesn't appear within ${URL_TIMEOUT_S}s.
+Exit 1 only if Remote Control doesn't activate within ${URL_TIMEOUT_S}s
+  (a missing --url link while RC is active is NOT a failure).
 EOF
 }
 
@@ -209,9 +210,7 @@ PYEOF
     # so quotes would end up in the displayed name.
     tmux send-keys -t "$tmux_name" "/remote-control ${claude_name}" Enter
 
-    local url=""
-    local confirmed_rc=0
-    local iters
+    local url="" rc_active=0 confirmed_rc=0 iters
     iters=$(awk -v t="$URL_TIMEOUT_S" -v s="$POLL_INTERVAL_S" 'BEGIN{print int(t/s)}')
     for _ in $(seq 1 "$iters"); do
         local pane
@@ -224,8 +223,16 @@ PYEOF
             sleep 0.5
             continue
         fi
-        url=$(printf '%s' "$pane" | grep -oE 'https://claude\.ai/code[/?][A-Za-z0-9._~:/?#@!$&+=%-]+' | tail -1 || true)
-        [[ -n "$url" ]] && break
+        # Primary success signal is the persistent "Remote Control active" status
+        # bar — NOT the URL. The URL is only needed for --url, and it can appear
+        # late or scroll out of the captured window, which used to cause a false
+        # "not detected" + exit 1 even though RC was up.
+        printf '%s' "$pane" | grep -q 'Remote Control active' && rc_active=1
+        if [[ -z "$url" ]]; then
+            url=$(printf '%s' "$pane" | grep -oE 'https://claude\.ai/code[/?][A-Za-z0-9._~:/?#@!$&+=%-]+' | tail -1 || true)
+        fi
+        # Done once RC is active (and, if --url was asked, once we also have the URL).
+        if (( rc_active )) && { (( !show_url )) || [[ -n "$url" ]]; }; then break; fi
         sleep "$POLL_INTERVAL_S"
     done
 
@@ -233,20 +240,22 @@ PYEOF
     if (( show_url )); then
         if [[ -n "$url" ]]; then
             printf 'URL:     %s\n' "$url"
+        elif (( rc_active )); then
+            printf 'URL:     <RC active; link not captured — run: claude-remote refresh %q>\n' "$tmux_name"
         else
-            printf 'URL:     <timeout after %ss — check pane manually>\n' "$URL_TIMEOUT_S"
+            printf 'URL:     <remote-control did not come up within %ss — check pane>\n' "$URL_TIMEOUT_S"
         fi
     else
-        if [[ -n "$url" ]]; then
-            printf 'STATUS:  remote-control active (pass --url to print the link)\n'
+        if (( rc_active )); then
+            printf 'STATUS:  remote-control active\n'
         else
-            printf 'STATUS:  remote-control URL not detected within %ss — check pane\n' "$URL_TIMEOUT_S"
+            printf 'STATUS:  remote-control did NOT activate within %ss — check pane\n' "$URL_TIMEOUT_S"
         fi
     fi
     printf "ATTACH:  tmux attach -t '%s'\n" "$tmux_name"
 
-    # On timeout, dump the last lines of the pane to stderr to aid debugging.
-    if [[ -z "$url" ]]; then
+    # Fail only if Remote Control genuinely never activated (not merely "no URL").
+    if (( !rc_active )); then
         echo "claude-remote: --- last 30 lines of pane '$tmux_name' ---" >&2
         tmux capture-pane -p -J -t "$tmux_name" -S -30 2>/dev/null >&2 || true
         exit 1

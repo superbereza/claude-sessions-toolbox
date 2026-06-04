@@ -74,7 +74,9 @@ With `--url` the `STATUS` line is replaced by:
 URL:     https://claude.ai/code/...
 ```
 
-Exit code is `1` if the remote-control URL didn't appear within 30s (in either mode).
+Exit code is `1` **only if Remote Control didn't activate** within 45s. A missing `--url`
+link while RC is active is **not** a failure — the success signal is the "Remote Control
+active" status bar, not the URL (which can appear late or scroll out of view).
 
 ## What it does
 
