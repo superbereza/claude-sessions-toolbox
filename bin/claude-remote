@@ -107,20 +107,28 @@ cmd_spawn() {
     [[ -d "$abs_path" ]] || is_new=1
     (( is_new )) && mkdir -p "$abs_path"
 
-    local base session_name tmux_name
+    local base session_name tmux_name final_name
     base=$(basename "$abs_path")
     # Session name = remote-control chat title. Defaults to the folder name
     # (clean, no timestamp). Nothing is prepended automatically — pass the name
     # in full (e.g. "mac-mini/ai-auth-lib") if you want a "device/" prefix.
     [[ -z "$name" ]] && name="$base"
-    session_name="cc${EM}${name}"
 
-    tmux_name="$session_name"
+    # Pick a free name. The collision check must be EXACT: `tmux has-session -t X`
+    # matches on an unambiguous PREFIX, so spawning "dev" when a "dev-helper"
+    # session exists would falsely "collide" and bump to "dev-2". Compare full
+    # session names with `grep -xF` instead (handles the em-dash and slashes).
+    # On a REAL collision, number BOTH the tmux session AND the chat title, so the
+    # two chats are distinguishable on the device (not two identically-named ones).
+    final_name="$name"
     local i=2
-    while tmux has-session -t "$tmux_name" 2>/dev/null; do
-        tmux_name="${session_name}-${i}"
+    while tmux list-sessions -F '#{session_name}' 2>/dev/null \
+            | grep -qxF -- "cc${EM}${final_name}"; do
+        final_name="${name}-${i}"
         ((i++))
     done
+    session_name="cc${EM}${final_name}"
+    tmux_name="$session_name"
 
     # Pre-accept bypass-permissions mode so claude won't pause on the
     # one-time confirmation dialog on its first --dangerously-skip-permissions run.
@@ -173,7 +181,9 @@ PYEOF
 
     tmux new-session -d -s "$tmux_name" -c "$abs_path"
 
-    local claude_name="$name"
+    # Chat title follows the (possibly numbered) final name, so a collision-bumped
+    # session shows as "name-2" on the device instead of a duplicate "name".
+    local claude_name="$final_name"
 
     # Build the claude launch command. With --resume <uuid>, claude reopens that
     # specific session in this pane instead of starting a fresh conversation.

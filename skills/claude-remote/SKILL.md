@@ -49,7 +49,7 @@ claude-remote kill --all
 | Arg | Description |
 |-----|-------------|
 | `<path>` | Folder to run Claude in. Created with `mkdir -p` if missing. |
-| `[name]` | Session name = remote-control **chat title**, used verbatim. Default: the folder name. Nothing is prepended automatically — if you use a `device/` prefix convention (e.g. `mac-mini/`), pass the full title yourself: `claude-remote ~/dev/ai-auth-lib "mac-mini/ai-auth-lib"`. |
+| `[name]` | Session name = remote-control **chat title**, used verbatim. Default: the folder name. Nothing is prepended automatically — if you use a `device/` prefix convention (e.g. `mac-mini/`), pass the full title yourself: `claude-remote ~/dev/ai-auth-lib "mac-mini/ai-auth-lib"`. **Collisions:** if a session with the exact same name is already running, the new one is numbered (`name-2`, `name-3`, …) on **both** the tmux session and the chat title, so the two are distinguishable. A name that is merely a *prefix* of an existing session (e.g. `dev` vs a running `dev-helper`) is **not** a collision and is created as-is. |
 
 ## Flags
 
