@@ -27,10 +27,10 @@ Install the skill via the plugin (option 1 or 2); add the standalone shell CLI (
 ```bash
 git clone https://github.com/superbereza/claude-remote-launcher ~/dev/claude-remote-launcher
 cd ~/dev/claude-remote-launcher
-./install.sh   # symlinks ~/.local/bin/claude-remote → bin/claude-remote (~/.local/bin must be on PATH)
+./scripts/install.sh   # symlinks ~/.local/bin/claude-remote → bin/claude-remote (~/.local/bin must be on PATH)
 ```
 
-For running `claude-remote` by hand. The skill comes from the plugin (option 1/2), so `install.sh` no longer symlinks it.
+For running `claude-remote` by hand (incl. on a remote server). The skill comes from the plugin (option 1/2), so `scripts/install.sh` only puts the CLI on PATH — it doesn't symlink the skill.
 
 ### Other agents
 

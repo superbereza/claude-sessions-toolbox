@@ -130,7 +130,7 @@ Always include the tmux session name so the user can `kill` it later.
 The skill is just bash + tmux + claude — it runs wherever you invoke it.
 To spawn a session on a remote server:
 
-1. Install `claude-remote` there once (`git clone … && bash install.sh`).
+1. Install `claude-remote` there once (`git clone … && bash scripts/install.sh`).
 2. Make sure `claude` is installed and logged in on that server (`~/.claude/.credentials.json` must exist).
 3. From your local machine, invoke through SSH:
 
@@ -138,7 +138,7 @@ To spawn a session on a remote server:
 ssh <alias> "bash -lc 'claude-remote <path> [name] [--url]'"
 ```
 
-`bash -lc` is important so that `~/.local/bin` (where `install.sh` puts the
+`bash -lc` is important so that `~/.local/bin` (where `scripts/install.sh` puts the
 script) is on `PATH` for the non-interactive SSH shell. Alternative: call
 the script by its absolute path (e.g. `~/.local/bin/claude-remote`).
 

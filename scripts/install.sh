@@ -4,7 +4,7 @@
 # NOT symlink it.
 set -euo pipefail
 
-repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)
+repo_dir=$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)
 
 bin_dir="$HOME/.local/bin"
 
