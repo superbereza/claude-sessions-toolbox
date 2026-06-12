@@ -7,7 +7,7 @@ description: Spawn a Claude Code remote-control session in a detached tmux pane.
 
 Use `claude-remote` to spin up a fresh Claude Code session in any folder. The remote chat shows up automatically on the user's device, so by default the command just returns a **status** (no link). Pass `--url` only when the user explicitly wants the `claude.ai/code` link.
 
-> **Invoking `claude-remote`:** use `claude-remote` if it's on your PATH (it is after `install.sh`). If it isn't — e.g. when this skill was pulled in as a plugin — call the bundled launcher instead: `${CLAUDE_PLUGIN_ROOT}/bin/claude-remote` (or `./bin/claude-remote` from the repo). It's a self-contained bash script — no setup step. Everything below works the same either way — substitute that path for `claude-remote`.
+> **Invoking `claude-remote`:** call `claude-remote` directly. It's a self-contained bash script — no setup step.
 
 ## Subcommands
 

@@ -6,33 +6,31 @@ Designed so an agent (or you) can launch fresh Claude sessions in existing or br
 
 ## Install
 
-Three ways — pick one. All end with the same `claude-remote` CLI and skill.
+Install the skill via the plugin (option 1 or 2); add the standalone shell CLI (option 3) if you also want to run `claude-remote` by hand.
 
-### 1. Standalone (clone + symlinks)
-
-```bash
-git clone https://github.com/superbereza/claude-remote-launcher ~/dev/claude-remote-launcher
-cd ~/dev/claude-remote-launcher
-./install.sh
-```
-
-`install.sh` creates two symlinks:
-- `~/.local/bin/claude-remote` → `bin/claude-remote` (`~/.local/bin` must be on `PATH`)
-- `~/.claude/skills/claude-remote` → `skills/claude-remote`
-
-### 2. As a Claude Code plugin (this repo is its own marketplace)
+### 1. As a Claude Code plugin (this repo is its own marketplace)
 
 ```text
 /plugin marketplace add superbereza/claude-remote-launcher
 /plugin install claude-remote@claude-remote-launcher
 ```
 
-### 3. From an aggregate marketplace
+### 2. From an aggregate marketplace
 
 ```text
 /plugin marketplace add superbereza/superbereza-skills
 /plugin install claude-remote@superbereza-skills
 ```
+
+### 3. The `claude-remote` CLI on your own shell (optional)
+
+```bash
+git clone https://github.com/superbereza/claude-remote-launcher ~/dev/claude-remote-launcher
+cd ~/dev/claude-remote-launcher
+./install.sh   # symlinks ~/.local/bin/claude-remote → bin/claude-remote (~/.local/bin must be on PATH)
+```
+
+For running `claude-remote` by hand. The skill comes from the plugin (option 1/2), so `install.sh` no longer symlinks it.
 
 ### Other agents
 
@@ -111,7 +109,7 @@ The slash-command approach this script uses keeps the conversation as a plain Cl
 ./scripts/uninstall.sh
 ```
 
-Removes the symlinks. Repo and `~/.claude.json` are not touched.
+Removes the `~/.local/bin/claude-remote` symlink. Repo and `~/.claude.json` are not touched.
 
 ## OpenCode
 

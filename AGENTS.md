@@ -15,9 +15,7 @@ Requires `tmux`, `claude` (v2.1.51+, logged in), and `python3`.
 
 ## Invoking the CLI
 
-`claude-remote` is on PATH after `./install.sh`. Otherwise call `./bin/claude-remote`
-from this repo (or `${CLAUDE_PLUGIN_ROOT}/bin/claude-remote` when loaded as a plugin).
-It's a self-contained bash script — no build/venv step.
+Call `claude-remote` directly. It's a self-contained bash script — no build/venv step.
 
 ## Cheat sheet
 
