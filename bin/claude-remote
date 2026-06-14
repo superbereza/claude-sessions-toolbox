@@ -31,9 +31,9 @@ cmd_version() {
 usage() {
     cat <<EOF
 Usage:
-  claude-remote <path> [name] [--url] [--resume <uuid>]
+  claude-remote <path> [name] [--url] [--resume <uuid>] [--model <m>]
                                               Spawn a session (default action)
-  claude-remote spawn <path> [name] [--url] [--resume <uuid>]
+  claude-remote spawn <path> [name] [--url] [--resume <uuid>] [--model <m>]
                                               Same as above, explicit
   claude-remote ls                            List running cc— tmux sessions
   claude-remote kill <session>                Kill one tmux session
@@ -50,6 +50,8 @@ Flags:
   --url, -u           Also print the claude.ai/code URL. Default: status only.
   --resume <uuid>     Resume an existing session by UUID in the new tmux pane
   -r <uuid>           (instead of starting a fresh conversation).
+  --model <m>         Launch on a specific model (alias: opus/sonnet/fable, or a
+  -m <m>              full id like claude-opus-4-8). Default: claude's own default.
 
 Spawn output (default):
   SESSION: <tmux name>
@@ -74,8 +76,11 @@ cmd_spawn() {
     # Pass --url (-u) to also print the claude.ai/code URL.
     # Pass --resume <uuid> to resume an existing session by its UUID instead
     # of starting a new conversation in the pane.
+    # Pass --model <alias> to launch on a specific model (alias like opus/sonnet/
+    # fable, or a full id like claude-opus-4-8). Default: claude's own default.
     local show_url=0
     local resume_uuid=""
+    local model=""
     local -a pos=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -83,6 +88,11 @@ cmd_spawn() {
             --resume|-r)
                 [[ -n "${2:-}" ]] || die "--resume requires a session UUID"
                 resume_uuid="$2"
+                shift
+                ;;
+            --model|-m)
+                [[ -n "${2:-}" ]] || die "--model requires a model alias or id"
+                model="$2"
                 shift
                 ;;
             --)         shift; while [[ $# -gt 0 ]]; do pos+=("$1"); shift; done; break ;;
@@ -190,6 +200,9 @@ PYEOF
     local claude_cmd="claude --dangerously-skip-permissions"
     if [[ -n "$resume_uuid" ]]; then
         claude_cmd+=" --resume $resume_uuid"
+    fi
+    if [[ -n "$model" ]]; then
+        claude_cmd+=" --model $model"
     fi
 
     # Start interactive Claude; we'll enable Remote Control via slash.
