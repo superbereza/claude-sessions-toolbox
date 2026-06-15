@@ -31,9 +31,9 @@ cmd_version() {
 usage() {
     cat <<EOF
 Usage:
-  claude-remote <path> [name] [--url] [--resume <uuid>] [--model <m>]
+  claude-remote <path> [name] [--url] [--resume <uuid>] [--model <m>] [--effort <e>]
                                               Spawn a session (default action)
-  claude-remote spawn <path> [name] [--url] [--resume <uuid>] [--model <m>]
+  claude-remote spawn <path> [name] [--url] [--resume <uuid>] [--model <m>] [--effort <e>]
                                               Same as above, explicit
   claude-remote ls                            List running cc— tmux sessions
   claude-remote kill <session>                Kill one tmux session
@@ -52,6 +52,8 @@ Flags:
   -r <uuid>           (instead of starting a fresh conversation).
   --model <m>         Launch on a specific model (alias: opus/sonnet/fable, or a
   -m <m>              full id like claude-opus-4-8). Default: claude's own default.
+  --effort <e>        Launch with an effort level: low|medium|high|xhigh|max.
+  -e <e>              Default: claude's own default.
 
 Spawn output (default):
   SESSION: <tmux name>
@@ -81,6 +83,7 @@ cmd_spawn() {
     local show_url=0
     local resume_uuid=""
     local model=""
+    local effort=""
     local -a pos=()
     while [[ $# -gt 0 ]]; do
         case "$1" in
@@ -93,6 +96,11 @@ cmd_spawn() {
             --model|-m)
                 [[ -n "${2:-}" ]] || die "--model requires a model alias or id"
                 model="$2"
+                shift
+                ;;
+            --effort|-e)
+                [[ -n "${2:-}" ]] || die "--effort requires a level (low|medium|high|xhigh|max)"
+                effort="$2"
                 shift
                 ;;
             --)         shift; while [[ $# -gt 0 ]]; do pos+=("$1"); shift; done; break ;;
@@ -203,6 +211,9 @@ PYEOF
     fi
     if [[ -n "$model" ]]; then
         claude_cmd+=" --model $model"
+    fi
+    if [[ -n "$effort" ]]; then
+        claude_cmd+=" --effort $effort"
     fi
 
     # Start interactive Claude; we'll enable Remote Control via slash.

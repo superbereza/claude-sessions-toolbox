@@ -13,8 +13,8 @@ Use `claude-remote` to spin up a fresh Claude Code session in any folder. The re
 
 | Command | Action |
 |---------|--------|
-| `claude-remote <path> [name] [--url] [--resume <uuid>] [--model <m>]` | Spawn a session (default action; equivalent to `spawn`) |
-| `claude-remote spawn <path> [name] [--url] [--resume <uuid>] [--model <m>]` | Same as above, explicit |
+| `claude-remote <path> [name] [--url] [--resume <uuid>] [--model <m>] [--effort <e>]` | Spawn a session (default action; equivalent to `spawn`) |
+| `claude-remote spawn <path> [name] [--url] [--resume <uuid>] [--model <m>] [--effort <e>]` | Same as above, explicit |
 | `claude-remote ls` | List running `cc—` tmux sessions with their cwd |
 | `claude-remote kill <session>` | Kill one tmux session |
 | `claude-remote kill --all` | Kill all `cc—` tmux sessions |
@@ -57,15 +57,16 @@ claude-remote kill --all
 |------|--------|
 | `--url`, `-u` | Also print the `claude.ai/code` URL. **Default: status only** (no link). |
 | `--resume <uuid>`, `-r <uuid>` | Resume an existing session by UUID in the new tmux pane (instead of starting a fresh conversation). The session must exist in `~/.claude/projects/<cwd>/`. |
-| `--model <m>`, `-m <m>` | Launch the session on a specific model — an alias (`opus`, `sonnet`, `fable`) or a full id (`claude-opus-4-8`). Omit to use claude's own default. See **Choosing the model** below. |
+| `--model <m>`, `-m <m>` | Launch the session on a specific model — an alias (`opus`, `sonnet`, `fable`) or a full id (`claude-opus-4-8`). Omit to use claude's own default. See **Choosing the model & effort** below. |
+| `--effort <e>`, `-e <e>` | Launch with an effort level: `low`, `medium`, `high`, `xhigh`, `max`. Omit to use claude's own default. |
 
-## Choosing the model
+## Choosing the model & effort
 
-**Before spawning a session, clarify which model the user wants** — don't silently
-inherit a default. Ask (or confirm) and pass `--model <alias>`:
+**Before spawning a session, clarify which model (and effort) the user wants** — don't
+silently inherit a default. Ask (or confirm) and pass `--model <alias>` / `--effort <level>`:
 
 ```bash
-claude-remote ~/dev/trendwatcher "dev-serv-in/trendwatcher" --model opus
+claude-remote ~/dev/trendwatcher "dev-serv-in/trendwatcher" --model opus --effort max
 ```
 
 Why this matters:
@@ -76,10 +77,11 @@ Why this matters:
   and the session then can't run until someone switches it — easy to miss on a remote
   session you're not watching.
 
-So treat the model as a parameter to confirm at creation, the same as the path and name.
-If the user doesn't care, omit `--model` (claude's own default) — but say that's what
-you're doing. Effort level is **not** a launch flag; set it in-session with `/effort`
-if needed.
+So treat model and effort as parameters to confirm at creation, the same as the path
+and name. If the user doesn't care, omit the flags (claude's own defaults) — but say
+that's what you're doing. Both can also be changed later in-session with `/model` and
+`/effort`, but setting them at launch via `--model` / `--effort` avoids the
+inherited-default trap entirely.
 
 ```
 SESSION: cc—myproject
