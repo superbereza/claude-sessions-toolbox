@@ -28,6 +28,21 @@ cmd_version() {
     echo "claude-remote $v"
 }
 
+# Resolve the claude binary to an ABSOLUTE path. Prefer PATH, but fall back to known
+# install locations: on some setups (e.g. a server where claude lives in ~/.npm-global)
+# the npm-global bin dir is NOT on a non-interactive PATH, so a bare `command -v claude`
+# fails even though claude is installed and runnable. Using the resolved absolute path
+# for the in-tmux launch too makes the spawn independent of the pane's PATH.
+resolve_claude() {
+    local c
+    c=$(command -v claude 2>/dev/null) && { printf '%s\n' "$c"; return 0; }
+    for c in "$HOME/.npm-global/bin/claude" "$HOME/.local/bin/claude" \
+             "$HOME/.claude/local/claude" /usr/local/bin/claude; do
+        [[ -x "$c" ]] && { printf '%s\n' "$c"; return 0; }
+    done
+    return 1
+}
+
 usage() {
     cat <<EOF
 Usage:
@@ -114,7 +129,8 @@ cmd_spawn() {
     [[ -z "$raw_path" ]] && { usage; exit 2; }
 
     command -v tmux    >/dev/null || die "tmux not found"
-    command -v claude  >/dev/null || die "claude not found in PATH"
+    local CLAUDE_BIN
+    CLAUDE_BIN=$(resolve_claude) || die "claude not found (checked PATH, ~/.npm-global/bin, ~/.local/bin, ~/.claude/local)"
     command -v python3 >/dev/null || die "python3 not found"
     [[ -f "$HOME/.claude.json" ]] || die "~/.claude.json not found — run 'claude' once to initialize"
 
@@ -205,7 +221,7 @@ PYEOF
 
     # Build the claude launch command. With --resume <uuid>, claude reopens that
     # specific session in this pane instead of starting a fresh conversation.
-    local claude_cmd="claude --dangerously-skip-permissions"
+    local claude_cmd="$CLAUDE_BIN --dangerously-skip-permissions"
     if [[ -n "$resume_uuid" ]]; then
         claude_cmd+=" --resume $resume_uuid"
     fi
